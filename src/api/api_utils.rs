@@ -6,6 +6,15 @@ pub enum APIError {
     InternalServerError,
 }
 
+impl APIError {
+    pub fn status(&self) -> Status {
+        match self {
+            APIError::NotFound => Status::NotFound,
+            APIError::InternalServerError => Status::InternalServerError,
+        }
+    }
+}
+
 impl<'r> Responder<'r, 'static> for APIError {
     fn respond_to(self, req: &'r Request<'_>) -> rocket::response::Result<'static> {
         let json_string = match self {

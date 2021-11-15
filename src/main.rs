@@ -1,15 +1,21 @@
 #[macro_use]
 extern crate rocket;
+
+use database::URL;
 use rand::{distributions::Alphanumeric, Rng};
-use rocket::{response::Redirect, Build, Rocket};
+use rocket::{http::Status, Build, Rocket, State};
 use sled_extensions::DbExt;
 
 mod api;
 mod database;
 
-#[get("/test")]
-fn redir() -> Redirect {
-    Redirect::to(uri!("https://google.com"))
+#[get("/<code>")]
+fn redir(db: &State<database::DB>, code: String) -> Result<URL, Status> {
+    let url = db.get_url(&code);
+    match url {
+        Ok(url) => Ok(url),
+        Err(err) => Err(err.status()),
+    }
 }
 
 #[get("/")]

@@ -6,12 +6,8 @@ use crate::api::api_utils::APIError;
 
 #[get("/link/<url>")]
 pub fn link_info(db: &State<database::DB>, url: String) -> Result<Json<database::URL>, APIError> {
-    let url = db.urls.get(&url).unwrap();
-    if url.is_none() {
-        Err(APIError::NotFound)
-    } else {
-        Ok(Json(url.unwrap()))
-    }
+    db.get_url(&url)
+        .map(|url| Json(url))
 }
 
 //Test this endpoint: curl -X PUT -H "Content-Type: application/json" -d '{"code":"abc","target":"https://abc.xyz"}' "127.0.0.1:8000/api/link"
