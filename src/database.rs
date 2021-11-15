@@ -30,7 +30,7 @@ pub struct URL {
 impl<'r> Responder<'r, 'static> for URL {
     fn respond_to(self, _: &'r Request<'_>) -> rocket::response::Result<'static> {
         Response::build()
-            .status(Status::SeeOther)
+            .status(Status::TemporaryRedirect)
             .raw_header("Location", self.target)
             .ok()
     }
