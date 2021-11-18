@@ -39,11 +39,15 @@ pub fn create_link(
     url: Json<database::URL>,
 ) -> Result<Json<database::URL>, APIError> {
     if url.is_expired() {
-        return Err(APIError::BadRequest);
+        return Err(APIError::BadRequest(
+            "Expiry time must be in the future.".to_string(),
+        ));
     }
     match db.urls.insert(url.code.as_bytes(), url.clone()) {
         Ok(_) => Ok(Json(url.0)),
-        Err(_) => Err(APIError::InternalServerError),
+        Err(_) => Err(APIError::InternalServerError(
+            "Couldn't insert URL into the database.".to_string(),
+        )),
     }
 }
 
@@ -53,8 +57,10 @@ pub fn create_link(
 #[delete("/link/<url>")]
 pub fn delete_link(db: &State<database::DB>, url: String) -> Result<Json<database::URL>, APIError> {
     match db.urls.remove(&url) {
-        Ok(None) => Err(APIError::NotFound),
+        Ok(None) => Err(APIError::NotFound("URL not found.".to_string())),
         Ok(Some(url)) => Ok(Json(url)),
-        Err(_) => Err(APIError::InternalServerError),
+        Err(_) => Err(APIError::InternalServerError(
+            "Couldn't delete URL from the database.".to_string(),
+        )),
     }
 }

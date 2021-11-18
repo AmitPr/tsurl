@@ -20,13 +20,13 @@ impl DB {
     pub fn get_url(&self, code: &String) -> Result<URL, APIError> {
         let url = self.urls.get(&code).unwrap();
         if url.is_none() {
-            return Err(APIError::NotFound);
+            return Err(APIError::NotFound("URL not found.".to_string()));
         }
         let url = url.unwrap();
         if url.is_expired() {
             self.delete_link(&url.code)
                 .expect("Couldn't delete expired URL from DB");
-            return Err(APIError::NotFound);
+            return Err(APIError::NotFound("URL not found.".to_string()));
         }
         return Ok(url.clone());
     }
@@ -34,9 +34,11 @@ impl DB {
     /// Delete a URL object from the database, given the shortened URL code.
     pub fn delete_link(&self, url: &String) -> Result<URL, APIError> {
         match self.urls.remove(&url) {
-            Ok(None) => Err(APIError::NotFound),
+            Ok(None) => Err(APIError::NotFound("URL not found.".to_string())),
             Ok(Some(url)) => Ok(url),
-            Err(_) => Err(APIError::InternalServerError),
+            Err(_) => Err(APIError::InternalServerError(
+                "Couldn't delete URL from the database.".to_string(),
+            )),
         }
     }
 }
