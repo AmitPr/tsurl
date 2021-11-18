@@ -1,11 +1,6 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{borrow::BorrowMut, time::{SystemTime, UNIX_EPOCH}};
 
-use rocket::{
-    http::Status,
-    response::Responder,
-    serde::{Deserialize, Serialize},
-    Request, Response,
-};
+use rocket::{Request, Response, http::Status, response::Responder, serde::{Deserialize, Serialize}};
 use sled_extensions::bincode::Tree;
 
 use crate::api::api_utils::APIError;
@@ -22,7 +17,11 @@ impl DB {
         if url.is_none() {
             return Err(APIError::NotFound("URL not found.".to_string()));
         }
-        let url = url.unwrap();
+        let mut url = url.unwrap();
+        let mut updated_url = url.clone();
+        updated_url.num_hits += 1;
+        self.insert_link(&updated_url);
+        url = updated_url;
         if url.is_expired() {
             self.delete_link(&url.code)
                 .expect("Couldn't delete expired URL from DB");
@@ -41,6 +40,15 @@ impl DB {
             )),
         }
     }
+
+    pub fn insert_link(&self, url: &URL) -> Result<URL, APIError> {
+        match self.urls.insert(url.code.as_bytes(), url.clone()) {
+            Ok(_) => Ok(url.clone()),
+            Err(_) => Err(APIError::InternalServerError(
+                "Couldn't insert URL into the database.".to_string(),
+            )),
+        }
+    }
 }
 
 /// Struct for storing a URL object.
@@ -55,6 +63,10 @@ pub struct URL {
     pub code: String,
     #[serde(default)]
     pub expiry_time: Option<u128>,
+    #[serde(default)]
+    pub max_hits: Option<u64>,
+    #[serde(skip)]
+    pub num_hits : u64,
 }
 
 impl URL {
@@ -65,6 +77,10 @@ impl URL {
                 .unwrap()
                 .as_millis();
             return now > expiration_time;
+        } else if let Some(max_hits) = self.max_hits {
+            if max_hits <= self.num_hits {
+                return true;
+            }
         }
         return false;
     }
