@@ -3,6 +3,7 @@ use rocket::{
     response::{content::Json, Responder},
     Request,
 };
+
 /// Error type for API responses. Possible errors are:
 /// - `NotFound`: The requested resource was not found (404).
 /// - `InternalServerError`: An internal server error occurred (500).
@@ -21,6 +22,15 @@ impl APIError {
             APIError::NotFound(_) => Status::NotFound,
             APIError::InternalServerError(_) => Status::InternalServerError,
             APIError::BadRequest(_) => Status::BadRequest,
+        }
+    }
+
+    /// Getter for the error message.
+    pub fn message(&self) -> &String {
+        match self {
+            APIError::NotFound(msg) => msg,
+            APIError::InternalServerError(msg) => msg,
+            APIError::BadRequest(msg) => msg,
         }
     }
 }
