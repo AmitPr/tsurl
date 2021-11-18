@@ -9,18 +9,18 @@ use rocket::{
 /// - `BadRequest`: The request was malformed (400).
 #[derive(Debug, Clone)]
 pub enum APIError {
-    NotFound,
-    InternalServerError,
-    BadRequest,
+    NotFound(String),
+    InternalServerError(String),
+    BadRequest(String),
 }
 
 impl APIError {
     /// Returns a `rocket::http::Status` for this error.
     pub fn status(&self) -> Status {
         match self {
-            APIError::NotFound => Status::NotFound,
-            APIError::InternalServerError => Status::InternalServerError,
-            APIError::BadRequest => Status::BadRequest,
+            APIError::NotFound(_) => Status::NotFound,
+            APIError::InternalServerError(_) => Status::InternalServerError,
+            APIError::BadRequest(_) => Status::BadRequest,
         }
     }
 }
@@ -29,20 +29,20 @@ impl APIError {
 impl<'r> Responder<'r, 'static> for APIError {
     fn respond_to(self, req: &'r Request<'_>) -> rocket::response::Result<'static> {
         let json_string = match self {
-            APIError::NotFound => format!(
+            APIError::NotFound(message) => format!(
                 "{{\"error\":{{\"code\":{},\"message\":\"{}\"}}}}",
                 Status::NotFound.code,
-                Status::NotFound.reason().unwrap()
+                message
             ),
-            APIError::InternalServerError => format!(
+            APIError::InternalServerError(message) => format!(
                 "{{\"error\":{{\"code\":{},\"message\":\"{}\"}}}}",
                 Status::InternalServerError.code,
-                Status::InternalServerError.reason().unwrap()
+                message
             ),
-            APIError::BadRequest => format!(
+            APIError::BadRequest(message) => format!(
                 "{{\"error\":{{\"code\":{},\"message\":\"{}\"}}}}",
                 Status::BadRequest.code,
-                Status::BadRequest.reason().unwrap()
+                message
             ),
         };
         Json(json_string).respond_to(&req)
