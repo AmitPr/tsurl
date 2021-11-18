@@ -6,6 +6,8 @@ use database::URL;
 use rand::{distributions::Alphanumeric, Rng};
 use rocket::{http::Status, Build, Rocket, State};
 use sled_extensions::DbExt;
+use crate::api::api_utils::APIError;
+use crate::api::links::delete_link;
 
 mod api;
 mod database;
@@ -13,13 +15,17 @@ mod database;
 #[get("/<code>")]
 fn redir(db: &State<database::DB>, code: String) -> Result<URL, Status> {
     let url = db.get_url(&code);
-    let time;
+    let url_reference;
     if !url.is_err() {
-        time = url.as_ref().unwrap().expiry_time.unwrap();
-        let system_time = time::get_time();
-        let millisec = system_time.sec + system_time.nsec as i64 / 1000 / 1000;
-        if time as i64 >= millisec {
-            panic!("Time has expired")
+        url_reference = url.as_ref().unwrap();
+        if !url_reference.expiry_time.is_none() {
+            let expiration_time = url_reference.expiry_time.unwrap();
+            let system_time = time::get_time();
+            let millisec = system_time.sec + system_time.nsec as i64 / 1000 / 1000;
+            if expiration_time as i64 <= millisec {
+                delete_link(db, url.unwrap().code);
+                return Err(APIError::NotFound.status());
+            }
         }
     }
 
