@@ -1,6 +1,4 @@
-// use core::time;
-// use std::time::{SystemTime, UNIX_EPOCH};
-extern crate time;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use rocket::{
     http::Status,
@@ -11,29 +9,36 @@ use rocket::{
 use sled_extensions::bincode::Tree;
 
 use crate::api::api_utils::APIError;
+
+/// Struct for storing database handles.
 pub struct DB {
     pub urls: Tree<URL>,
 }
-//Scans database for redirect url when user tries using shortened link
+
 impl DB {
+    /// Fetch a URL object from the database, given the shortened URL code.
     pub fn get_url(&self, code: &String) -> Result<URL, APIError> {
         let url = self.urls.get(&code).unwrap();
         if url.is_none() {
             return Err(APIError::NotFound);
         } else {
-            let url_reference = url.as_ref().unwrap();
-            if !url_reference.expiry_time.is_none() {
-                let expiration_time = url_reference.expiry_time.unwrap();
-                let system_time = time::get_time();
-                let millisec = system_time.sec + system_time.nsec as i64 / 1000 / 1000;
-                if expiration_time as i64 <= millisec {
-                    self.delete_link(&url.unwrap().code);
+            let url = url.unwrap();
+            if let Some(expiration_time) = url.expiry_time {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis();
+                if now > expiration_time {
+                    self.delete_link(&url.code)
+                        .expect("Couldn't delete expired URL from DB");
                     return Err(APIError::NotFound);
                 }
             }
+            return Ok(url.clone());
         }
-        Ok(url.unwrap().clone())
     }
+
+    /// Delete a URL object from the database, given the shortened URL code.
     pub fn delete_link(&self, url: &String) -> Result<URL, APIError> {
         match self.urls.remove(&url) {
             Ok(None) => Err(APIError::NotFound),
@@ -43,15 +48,21 @@ impl DB {
     }
 }
 
+/// Struct for storing a URL object.
+/// This is the format of the data stored in the database.
+/// # Fields
+/// * `code` - The shortened URL code.
+/// * `url` - The original URL.
+/// * `expiry_time` - The time at which the URL will expire, or `None` if it doesn't expire.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct URL {
     pub target: String,
     pub code: String,
     #[serde(default)]
-    pub expiry_time: Option<u64>,
+    pub expiry_time: Option<u128>,
 }
 
-
+/// Sends a redirect response to the client, for the given URL object.
 impl<'r> Responder<'r, 'static> for URL {
     fn respond_to(self, _: &'r Request<'_>) -> rocket::response::Result<'static> {
         Response::build()
@@ -60,4 +71,3 @@ impl<'r> Responder<'r, 'static> for URL {
             .ok()
     }
 }
-
