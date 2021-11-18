@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate rocket;
+extern crate time;
 
 use database::URL;
 use rand::{distributions::Alphanumeric, Rng};
@@ -12,6 +13,16 @@ mod database;
 #[get("/<code>")]
 fn redir(db: &State<database::DB>, code: String) -> Result<URL, Status> {
     let url = db.get_url(&code);
+    let time;
+    if !url.is_err() {
+        time = url.as_ref().unwrap().expiry_time.unwrap();
+        let system_time = time::get_time();
+        let millisec = system_time.sec + system_time.nsec as i64 / 1000 / 1000;
+        if time as i64 >= millisec {
+            panic!("Time has expired")
+        }
+    }
+
     match url {
         Ok(url) => Ok(url),
         Err(err) => Err(err.status()),
