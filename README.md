@@ -8,7 +8,7 @@ In order of most necessary to "nice-to-have" features:
 * [ ] 404, and landing pages.
 * [ ] Only authenticated users can create new links, using an exposed API
 * [ ] Web-Based interface to create and manage list of links
-* [ ] Links that expire (time limit)
+* [x] Links that expire (time limit)
 * [ ] CLI tool that can be used to quickly create short links
 * [ ] Server keeps track of how many hits each link gets for analytics
 * [ ] Links that expire (number of hits)
