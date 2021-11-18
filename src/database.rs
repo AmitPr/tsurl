@@ -21,21 +21,14 @@ impl DB {
         let url = self.urls.get(&code).unwrap();
         if url.is_none() {
             return Err(APIError::NotFound);
-        } else {
-            let url = url.unwrap();
-            if let Some(expiration_time) = url.expiry_time {
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis();
-                if now > expiration_time {
-                    self.delete_link(&url.code)
-                        .expect("Couldn't delete expired URL from DB");
-                    return Err(APIError::NotFound);
-                }
-            }
-            return Ok(url.clone());
         }
+        let url = url.unwrap();
+        if url.is_expired() {
+            self.delete_link(&url.code)
+                .expect("Couldn't delete expired URL from DB");
+            return Err(APIError::NotFound);
+        }
+        return Ok(url.clone());
     }
 
     /// Delete a URL object from the database, given the shortened URL code.
@@ -62,6 +55,18 @@ pub struct URL {
     pub expiry_time: Option<u128>,
 }
 
+impl URL {
+    pub fn is_expired(&self) -> bool {
+        if let Some(expiration_time) = self.expiry_time {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
+            return now > expiration_time;
+        }
+        return false;
+    }
+}
 /// Sends a redirect response to the client, for the given URL object.
 impl<'r> Responder<'r, 'static> for URL {
     fn respond_to(self, _: &'r Request<'_>) -> rocket::response::Result<'static> {

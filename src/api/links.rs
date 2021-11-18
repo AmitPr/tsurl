@@ -38,6 +38,9 @@ pub fn create_link(
     db: &State<database::DB>,
     url: Json<database::URL>,
 ) -> Result<Json<database::URL>, APIError> {
+    if url.is_expired() {
+        return Err(APIError::BadRequest);
+    }
     match db.urls.insert(url.code.as_bytes(), url.clone()) {
         Ok(_) => Ok(Json(url.0)),
         Err(_) => Err(APIError::InternalServerError),
