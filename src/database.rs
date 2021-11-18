@@ -1,3 +1,6 @@
+use core::time;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use rocket::{
     http::Status,
     response::Responder,
@@ -10,7 +13,7 @@ use crate::api::api_utils::APIError;
 pub struct DB {
     pub urls: Tree<URL>,
 }
-
+//Scans database for redirect url when user tries using shortened link
 impl DB {
     pub fn get_url(&self, code: &String) -> Result<URL, APIError> {
         let url = self.urls.get(&code).unwrap();
@@ -25,7 +28,10 @@ impl DB {
 pub struct URL {
     pub target: String,
     pub code: String,
+    #[serde(default)]
+    pub expiry_time: Option<u64>,
 }
+
 
 impl<'r> Responder<'r, 'static> for URL {
     fn respond_to(self, _: &'r Request<'_>) -> rocket::response::Result<'static> {
