@@ -76,12 +76,15 @@ impl URL {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_millis();
-            return now > expiration_time;
-        } else if let Some(max_hits) = self.max_hits {
-            if max_hits <= self.num_hits {
-                return true;
-            }
+                if now > expiration_time {
+                    return true;
+                } else if let Some(max_hits) = self.max_hits {
+                    if max_hits <= self.num_hits {
+                        return true;
+                    }
+                }
         }
+        
         return false;
     }
 }
