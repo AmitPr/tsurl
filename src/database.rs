@@ -1,6 +1,11 @@
-use std::{borrow::BorrowMut, time::{SystemTime, UNIX_EPOCH}};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use rocket::{Request, Response, http::Status, response::Responder, serde::{Deserialize, Serialize}};
+use rocket::{
+    http::Status,
+    response::Responder,
+    serde::{Deserialize, Serialize},
+    Request, Response,
+};
 use sled_extensions::bincode::Tree;
 
 use crate::api::api_utils::APIError;
@@ -20,7 +25,7 @@ impl DB {
         let mut url = url.unwrap();
         let mut updated_url = url.clone();
         updated_url.num_hits += 1;
-        self.insert_link(&updated_url);
+        self.insert_link(&updated_url).unwrap();
         url = updated_url;
         if url.is_expired() {
             self.delete_link(&url.code)
@@ -66,7 +71,7 @@ pub struct URL {
     #[serde(default)]
     pub max_hits: Option<u64>,
     #[serde(skip)]
-    pub num_hits : u64,
+    pub num_hits: u64,
 }
 
 impl URL {
@@ -76,15 +81,16 @@ impl URL {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_millis();
-                if now > expiration_time {
-                    return true;
-                } else if let Some(max_hits) = self.max_hits {
-                    if max_hits <= self.num_hits {
-                        return true;
-                    }
-                }
+            if now > expiration_time {
+                return true;
+            }
         }
-        
+        if let Some(max_hits) = self.max_hits {
+            if max_hits <= self.num_hits {
+                return true;
+            }
+        }
+
         return false;
     }
 }
