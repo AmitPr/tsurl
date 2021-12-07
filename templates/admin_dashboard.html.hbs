@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <script>
+        async function delete_link(id) {
+            const response = await fetch(`/api/link/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            location.reload();
+        }
+        async function create_link(code, target, expiry_time, max_hits) {
+            var body = {
+                code: code,
+                target: target,
+
+            };
+            if (expiry_time.length > 0) {
+                body.expiry_time = parseInt(expiry_time);
+            }
+            if (max_hits.length > 0) {
+                body.max_hits = parseInt(max_hits);
+            }
+            console.log(body);
+            const response = await fetch(`/api/link/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            location.reload();
+        }
+    </script>
+    <div class="container">
+        <h1>All URLs</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">URL</th>
+                    <th scope="col">Short URL</th>
+                    <th scope="col">Clicks</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each urls}}
+                <tr>
+                    <th scope="row">{{@index}}</th>
+                    <td>{{this.target}}</td>
+                    <td>{{this.code}}</td>
+                    <td>{{this.num_hits}}</td>
+                    <td><a href="#" onclick="delete_link('{{this.code}}')">Delete</a></td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        <form action="javascript:create_link(code.value,target.value,expiry_time.value,max_hits.value)">
+            <label for="code">Code</label>
+            <input type="text" id="code" placeholder="Code">
+            <label for="target">Target</label>
+            <input type="text" id="target" placeholder="Target">
+            <label for="expiry_time">Expiry Time</label>
+            <input type="text" id="expiry_time" placeholder="Expiry Time">
+            <label for="max_hits">Max hits</label>
+            <input type="text" id="max_hits" placeholder="Max hits">
+            <button type="submit">Create</button>
+        </form>
+
+    </div>
+</body>
+
+</html>

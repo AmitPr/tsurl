@@ -8,7 +8,7 @@ use crate::api::api_utils::APIError;
 /// Request should be sent to `/api/links/<url>`, Where `<url>` is the shortened URL code.
 #[get("/link/<url>")]
 pub fn link_info(db: &State<database::DB>, url: String) -> Result<Json<database::URL>, APIError> {
-    db.get_url(&url).map(|url| Json(url))
+    db.get_url(&url, false).map(|url| Json(url))
 }
 
 /// API endpoint for creating a new URL.

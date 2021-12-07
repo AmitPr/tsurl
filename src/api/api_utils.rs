@@ -13,6 +13,7 @@ pub enum APIError {
     NotFound(String),
     InternalServerError(String),
     BadRequest(String),
+    Unauthorized(String),
 }
 
 impl APIError {
@@ -22,6 +23,7 @@ impl APIError {
             APIError::NotFound(_) => Status::NotFound,
             APIError::InternalServerError(_) => Status::InternalServerError,
             APIError::BadRequest(_) => Status::BadRequest,
+            APIError::Unauthorized(_) => Status::Unauthorized,
         }
     }
 
@@ -31,6 +33,7 @@ impl APIError {
             APIError::NotFound(msg) => msg,
             APIError::InternalServerError(msg) => msg,
             APIError::BadRequest(msg) => msg,
+            APIError::Unauthorized(msg) => msg,
         }
     }
 }
@@ -52,6 +55,11 @@ impl<'r> Responder<'r, 'static> for APIError {
             APIError::BadRequest(message) => format!(
                 "{{\"error\":{{\"code\":{},\"message\":\"{}\"}}}}",
                 Status::BadRequest.code,
+                message
+            ),
+            APIError::Unauthorized(message) => format!(
+                "{{\"error\":{{\"code\":{},\"message\":\"{}\"}}}}",
+                Status::Unauthorized.code,
                 message
             ),
         };

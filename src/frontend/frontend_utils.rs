@@ -1,8 +1,6 @@
-use rocket::{
-    response::Responder,
-    Request,
-};
+use rocket::{response::Responder, Request};
 use rocket_dyn_templates::Template;
+use serde::Deserialize;
 
 use std::collections::BTreeMap;
 
@@ -31,4 +29,14 @@ impl<'r> Responder<'r, 'static> for FrontendError {
         };
         Template::render("error", &data).respond_to(&req)
     }
+}
+
+#[derive(FromForm, Deserialize)]
+pub struct AuthObject {
+    pub username: String,
+    pub password: String,
+}
+
+pub struct LoadedAuth {
+    pub credentials: String,
 }

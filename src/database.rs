@@ -17,16 +17,18 @@ pub struct DB {
 
 impl DB {
     /// Fetch a URL object from the database, given the shortened URL code.
-    pub fn get_url(&self, code: &String) -> Result<URL, APIError> {
+    pub fn get_url(&self, code: &String, update_hits: bool) -> Result<URL, APIError> {
         let url = self.urls.get(&code).unwrap();
         if url.is_none() {
             return Err(APIError::NotFound("URL not found.".to_string()));
         }
         let mut url = url.unwrap();
         let mut updated_url = url.clone();
-        updated_url.num_hits += 1;
-        self.insert_link(&updated_url).unwrap();
-        url = updated_url;
+        if update_hits {
+            updated_url.num_hits += 1;
+            self.insert_link(&updated_url).unwrap();
+            url = updated_url;
+        }
         if url.is_expired() {
             self.delete_link(&url.code)
                 .expect("Couldn't delete expired URL from DB");
@@ -54,6 +56,19 @@ impl DB {
             )),
         }
     }
+
+    /// Get all URLs from the database.
+    pub fn get_all_urls(&self) -> Vec<URL> {
+        let mut urls = Vec::new();
+        for url in self.urls.iter() {
+            if url.is_err() {
+                continue;
+            }
+            let (_, url) = url.unwrap();
+            urls.push(url.clone());
+        }
+        return urls;
+    }
 }
 
 /// Struct for storing a URL object.
@@ -70,7 +85,7 @@ pub struct URL {
     pub expiry_time: Option<u128>,
     #[serde(default)]
     pub max_hits: Option<u64>,
-    #[serde(skip)]
+    #[serde(default)]
     pub num_hits: u64,
 }
 
